@@ -22,6 +22,7 @@ export function VisualCaptcha({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [code, setCode] = useState('')
   const [entry, setEntry] = useState('')
+  const [captchaId, setCaptchaId] = useState<string | null>(null)
 
   const draw = useCallback((value: string) => {
     const canvas = canvasRef.current
@@ -80,11 +81,31 @@ export function VisualCaptcha({
   }, [])
 
   const refresh = useCallback(() => {
-    const next = randomCode()
-    setCode(next)
-    setEntry('')
-    onValidChange(false)
-    draw(next)
+    // request a server-side challenge; fallback to local generation on error
+    fetch('/api/captcha/new')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.code) {
+          setCaptchaId(data.id || null)
+          setCode(String(data.code || ''))
+          setEntry('')
+          onValidChange(false)
+          draw(String(data.code || ''))
+        } else {
+          const next = randomCode()
+          setCode(next)
+          setEntry('')
+          onValidChange(false)
+          draw(next)
+        }
+      })
+      .catch(() => {
+        const next = randomCode()
+        setCode(next)
+        setEntry('')
+        onValidChange(false)
+        draw(next)
+      })
   }, [draw, onValidChange])
 
   useEffect(() => {
