@@ -24,3 +24,7 @@ export const CATEGORY_ICON: Record<string, LucideIcon> = {
   building: Hammer,
   health: HeartPulse,
 }
+
+export function categoryIcon(id: string): LucideIcon {
+  return CATEGORY_ICON[id] ?? Sparkles
+}
