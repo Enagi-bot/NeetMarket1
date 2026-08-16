@@ -4,12 +4,29 @@ import { useMemo, useState } from 'react'
 import { useApp, formatNaira } from '@/lib/app-context'
 import { CATEGORIES } from '@/lib/nigeria-data'
 import { categoryIcon } from '@/lib/category-icons'
-import { BottomNav, type TabKey } from '@/components/dashboard/bottom-nav'
+import { BottomNav, type Tab } from '@/components/dashboard/bottom-nav'
 import { WalletPanel } from '@/components/dashboard/wallet-panel'
 import { HistoryPanel } from '@/components/dashboard/history-panel'
 import { ProfilePanel } from '@/components/dashboard/profile-panel'
 import { StarRating } from '@/components/brand'
-import { TrendingUp, Search as SearchIcon, MapPin, Sparkles } from 'lucide-react'
+import {
+  TrendingUp,
+  Search as SearchIcon,
+  MapPin,
+  Sparkles,
+  Lightbulb,
+  History as HistoryIcon,
+  Wallet as WalletIcon,
+  UserCircle2,
+} from 'lucide-react'
+
+const SELLER_TABS: Tab[] = [
+  { id: 'suggestions', label: 'Suggestions', icon: Lightbulb },
+  { id: 'search', label: 'Search', icon: SearchIcon },
+  { id: 'history', label: 'History', icon: HistoryIcon },
+  { id: 'wallet', label: 'Wallet', icon: WalletIcon },
+  { id: 'profile', label: 'Profile', icon: UserCircle2 },
+]
 
 type Demand = {
   id: string
@@ -21,7 +38,7 @@ type Demand = {
 
 export function SellerDashboard() {
   const { user } = useApp()
-  const [tab, setTab] = useState<TabKey>('suggestions')
+  const [tab, setTab] = useState<string>('suggestions')
 
   const locality = user?.locality || 'your area'
 
@@ -30,11 +47,23 @@ export function SellerDashboard() {
       <main className="flex-1 pb-24">
         {tab === 'suggestions' && <SellerSuggestions locality={locality} />}
         {tab === 'search' && <SellerSearch />}
-        {tab === 'history' && <HistoryPanel role="seller" />}
-        {tab === 'wallet' && <WalletPanel role="seller" />}
-        {tab === 'profile' && <ProfilePanel />}
+        {tab === 'history' && (
+          <div className="p-5">
+            <HistoryPanel role="seller" />
+          </div>
+        )}
+        {tab === 'wallet' && (
+          <div className="p-5">
+            <WalletPanel role="seller" />
+          </div>
+        )}
+        {tab === 'profile' && (
+          <div className="p-5">
+            <ProfilePanel />
+          </div>
+        )}
       </main>
-      <BottomNav role="seller" active={tab} onChange={setTab} />
+      <BottomNav tabs={SELLER_TABS} active={tab} onChange={setTab} />
     </div>
   )
 }
