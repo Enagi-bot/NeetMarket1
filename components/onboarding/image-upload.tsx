@@ -1,61 +1,58 @@
 'use client'
 
-import { useRef } from 'react'
-import { Camera, ImagePlus } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/form'
 
-export function ImageUpload({
-  value,
-  onChange,
-  className,
-}: {
-  value?: string
-  onChange: (dataUrl: string) => void
-  className?: string
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
+export function ImageUpload({ value, onChange }: { value?: string; onChange: (url: string) => void }) {
+  const [loading, setLoading] = useState(false)
+  const [preview, setPreview] = useState(value || '')
 
-  function handleFile(file?: File) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
     if (!file) return
+    setLoading(true)
     const reader = new FileReader()
-    reader.onload = () => onChange(String(reader.result))
+    reader.onload = async () => {
+      const dataUrl = String(reader.result || '')
+      // dataUrl = data:<mime>;base64,<data>
+      const parts = dataUrl.split(',')
+      const base64 = parts[1]
+      const payload = {
+        filename: file.name,
+        contentType: file.type,
+        base64,
+      }
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        const data = await res.json()
+        if (res.ok && data.url) {
+          setPreview(data.url)
+          onChange(data.url)
+        } else {
+          console.error('upload failed', data)
+          alert(data.error || 'Upload failed')
+        }
+      } catch (err) {
+        console.error(err)
+        alert('Upload failed')
+      } finally {
+        setLoading(false)
+      }
+    }
     reader.readAsDataURL(file)
   }
 
   return (
-    <div className={cn('flex items-center gap-4', className)}>
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className={cn(
-          'relative grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-input bg-muted/40 text-muted-foreground transition-colors hover:border-primary/50',
-          value && 'border-solid border-primary/30',
-        )}
-        aria-label="Upload picture"
-      >
-        {value ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={value || "/placeholder.svg"} alt="Selected preview" className="size-full object-cover" />
-        ) : (
-          <ImagePlus className="size-6" />
-        )}
-        <span className="absolute bottom-1 right-1 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow">
-          <Camera className="size-3.5" />
-        </span>
-      </button>
-      <div className="text-sm">
-        <p className="font-medium text-foreground">Upload a clear photo</p>
-        <p className="text-xs text-muted-foreground">
-          This becomes your profile & first listing image. JPG or PNG.
-        </p>
+    <div className="space-y-2">
+      <label className="block">
+        <Input type="file" accept="image/*" onChange={handleFile} disabled={loading} />
+      </label>
+      {loading ? <div className="text-sm text-muted-foreground">Uploading...</div> : null}
+      {preview ? <img src={preview} alt="preview" className="w-32 h-32 rounded-md object-cover" /> : null}
+      <div>
+        <Button type="button" variant="ghost" onClick={() => { setPreview(''); onChange('') }}>Remove</Button>
       </div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => handleFile(e.target.files?.[0])}
-      />
     </div>
   )
 }
